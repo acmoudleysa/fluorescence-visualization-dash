@@ -181,7 +181,7 @@ class FluorescenceData:
 
         fig = spectrum(
             np.vstack(data_stacked), 
-            labels=df.Name.repeat(len(ex_em_dict['Excitation'])), 
+            labels=df.Name.to_numpy().repeat(len(ex_em_dict['Excitation'])), 
             wavenumbers=ex_em_dict['Emission'], 
             hoverinfo=np.tile(ex_em_dict['Excitation'], df.shape[0])
         )
