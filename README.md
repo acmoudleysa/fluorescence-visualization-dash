@@ -30,3 +30,8 @@ This application is designed for analyzing and visualizing data from a Cary Ecli
   - Currently, bookmarks and cache are stored server-side using JSON files for demonstration purposes.
   - For a more scalable solution, especially for client-side storage, consider using `dcc.Store` or similar mechanisms to avoid server-side caching and bookmarking issues.
 
+
+
+## To do: 
+1) Dockerize
+2) Add tests
