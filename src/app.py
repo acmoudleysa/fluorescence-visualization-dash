@@ -4,8 +4,8 @@ from dash import Input, Output, dcc, html, State
 from src.components.components import main_content, \
     sidebar, dropdown_content, \
     upload_content, load_bookmarks, save_bookmarks, \
-    spectrum_page, return_bookmark_data, table
-from dash import callback_context as ctx
+    spectrum_page, return_bookmark_data, table, remove_bookmarks_json
+from dash import no_update, callback_context as ctx
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
 from src.dataloader.dataloader import FluorescenceData
@@ -182,21 +182,23 @@ def toggle_modal(open_click, close_click, save_click, bookmark, is_open, tableDa
 
 @app.callback(
     [Output("modal-bookmark-remove", "is_open"), 
-    Output("remove-bookmark", "n_clicks")],
+    Output("remove-bookmark", "n_clicks"), 
+    Output(component_id="bookmark_button", component_property="n_clicks")],
     [Input("remove_bookmark_button", "n_clicks"), 
     Input("donot-remove-modal", "n_clicks"), 
     Input("remove-bookmark", "n_clicks")],
     [State("bookmark-name-to-delete", "value"), 
-     State("modal-bookmark-remove", "is_open")], 
+     State("modal-bookmark-remove", "is_open"), 
+     State(component_id="bookmark_button", component_property="n_clicks")], 
     prevent_initial_call=True
 )
-def toggle_modal(open_click, close_click, remove_click, bookmarks, is_open):
-
-    if remove_click & (bookmarks is not None): 
-        print("I will remove everything")
+def toggle_modal(open_click, close_click, remove_click, bookmarks, is_open, clicks):
+    if bookmarks is not None: 
+        remove_bookmarks_json(bookmarks)
+        return not is_open, 0, clicks + 1
     elif open_click or close_click or remove_click: 
-        return not is_open, 0
-    return is_open, 0
+        return not is_open, 0, no_update
+    return is_open, 0, no_update
 
 
 @app.callback(

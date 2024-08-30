@@ -5,7 +5,7 @@ import dash_ag_grid as dag
 from pathlib import Path
 from src.utils.utils import load_json_file, save_json_file
 
-_PATH = Path(__file__).parents[1]/"cache"
+BOOKMARK_PATH = Path(__file__).parents[1]/"cache/bookmarks.json"
 
 SIDEBAR_STYLE = {
     "position": "fixed",
@@ -123,13 +123,16 @@ def upload_content() -> dcc.Upload:
 
 
 
-def remove_bookmarks(): 
+def remove_bookmarks_div(data): 
     return [dbc.Button("Want to delete a bookmark?", color="light", id= "remove_bookmark_button"), 
                              dbc.Modal(
                                     [
                                         dbc.ModalHeader("Select which bookmark to delete"),
                                         dbc.ModalBody(
-                                            dcc.Dropdown(id="bookmark-name-to-delete", placeholder="Select the bookmark/s", multi=True)
+                                            dcc.Dropdown(id="bookmark-name-to-delete", 
+                                                         placeholder="Select the bookmark/s", 
+                                                         multi=True, 
+                                                         options=list(data.keys()))
                                         ),
                                         dbc.ModalFooter(
                                             [dbc.Button("Remove", id="remove-bookmark", color="danger", n_clicks=0),
@@ -141,27 +144,32 @@ def remove_bookmarks():
                                 )
     ]
 
+
+def remove_bookmarks_json(values: List): 
+    data = load_json_file(BOOKMARK_PATH)
+    for name in data.copy(): 
+        if name in values: 
+            del data[name]
+    save_json_file(BOOKMARK_PATH, data)
+
 def load_bookmarks() -> Union[dcc.Dropdown, dbc.Alert]: 
-    file_path = _PATH/"bookmarks.json"
-    data = load_json_file(file_path)
+    data = load_json_file(BOOKMARK_PATH)
     if data: 
         return [dcc.Dropdown(
                 id="dropdown_bookmark", 
-                options=list(data.keys())), *remove_bookmarks()]
+                options=list(data.keys())), *remove_bookmarks_div(data)]
     return dbc.Alert("There are no bookmarks", color="warning", className="fs-2 text"),
      
 def return_bookmark_data(key) -> List: 
-    file_path = _PATH/"bookmarks.json"
-    data = load_json_file(file_path)
+    data = load_json_file(BOOKMARK_PATH)
     return data[key]
 
 def save_bookmarks(bookmark_name: str, data: Dict) -> dbc.Alert: 
-    file_path = _PATH/"bookmarks.json"
-    existing_data = load_json_file(file_path)
+    existing_data = load_json_file(BOOKMARK_PATH)
     if bookmark_name in existing_data: 
             return dbc.Alert("A bookmark with same name already exists!", color="warning", duration=3000)    
     existing_data[bookmark_name] = data
-    save_json_file(file_path, existing_data)
+    save_json_file(BOOKMARK_PATH, existing_data)
     return dbc.Alert("Bookmark saved successfully!", color="success", duration=3000)
 
 
@@ -246,13 +254,13 @@ def table(data):
             ]
 
 
-tab_2d_content = html.Div(
+tab_1d_content = html.Div(
     children=[], 
     id="oneD", 
     style={"height": "82vh"}
 )
 
-tab_1d_content = html.Div(
+tab_2d_content = html.Div(
     children=[], 
     id="twoD", 
     style={"height": "82vh"}
