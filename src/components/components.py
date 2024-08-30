@@ -3,8 +3,7 @@ from dash import dcc, html
 from typing import List, Any, Union, Dict
 import dash_ag_grid as dag
 from pathlib import Path
-from utils.utils import load_json_file, save_json_file
-
+from src.utils.utils import load_json_file, save_json_file
 
 _PATH = Path(__file__).parents[1]/"cache"
 
@@ -51,12 +50,12 @@ def sidebar() -> html.Div:
             )
 
 
-def dropdown_batches() -> dbc.Row: 
+def dropdown_batches(df) -> dbc.Row: 
     return dbc.Row([
         dbc.Col(
             dcc.Dropdown(
                 id="dropdown_batch", 
-                options=["2014", "2015", "2016"]
+                options=df.Batch.unique()
             ),
             width={"size": 10}
         )
@@ -69,36 +68,36 @@ def dropdown_samples() -> dbc.Row:
         dbc.Col(
             dcc.Dropdown(
                 id="dropdown_sample", 
-                options=["dadsda", "sdsd", "ksdjlfjsd"]
+                options=[]
             ),
             width={"size": 10}
         )
     ]
     )
 
-def dropdown_search_samples() -> dbc.Row: 
+def dropdown_search_samples(df) -> dbc.Row: 
     return dbc.Row([
         dbc.Col(
             dcc.Dropdown(
                 id="dropdown_sample_search", 
-                options=["ABC FROM 22.csv", "BCD FROM 24.csv", "KJDFD FROM 33.csv"]
+                options=(df['Name'] + " FROM " + df['Batch']).to_numpy()
             ),
             width={"size": 12}
         )
     ]
     )
 
-def dropdown_content() -> List: 
+def dropdown_content(df) -> List: 
     return [
         dbc.Row(dbc.Col(html.P("Select a Batch"), className="lead")),
-        dropdown_batches(), 
+        dropdown_batches(df), 
         *make_break(2), 
         dbc.Row(dbc.Col(html.P("Select sample/samples",className="lead"))),
         dropdown_samples(), 
         *make_break(2), 
         dbc.Row(dbc.Col(html.P("Or you can search for the sample name", 
                        className="lead text fst-italic"))),
-        dropdown_search_samples()
+        dropdown_search_samples(df)
     ]
 
 
@@ -123,13 +122,32 @@ def upload_content() -> dcc.Upload:
                     ) 
 
 
+
+def remove_bookmarks(): 
+    return [dbc.Button("Want to delete a bookmark?", color="light", id= "remove_bookmark_button"), 
+                             dbc.Modal(
+                                    [
+                                        dbc.ModalHeader("Select which bookmark to delete"),
+                                        dbc.ModalBody(
+                                            dcc.Dropdown(id="bookmark-name-to-delete", placeholder="Select the bookmark/s", multi=True)
+                                        ),
+                                        dbc.ModalFooter(
+                                            [dbc.Button("Remove", id="remove-bookmark", color="danger", n_clicks=0),
+                                            dbc.Button("Cancel", id="donot-remove-modal", color="success", n_clicks=0)]
+                                        ),
+                                    ],
+                                    id="modal-bookmark-remove",
+                                    is_open=False, 
+                                )
+    ]
+
 def load_bookmarks() -> Union[dcc.Dropdown, dbc.Alert]: 
     file_path = _PATH/"bookmarks.json"
     data = load_json_file(file_path)
     if data: 
-        return dcc.Dropdown(
+        return [dcc.Dropdown(
                 id="dropdown_bookmark", 
-                options=list(data.keys()))
+                options=list(data.keys())), *remove_bookmarks()]
     return dbc.Alert("There are no bookmarks", color="warning", className="fs-2 text"),
      
 def return_bookmark_data(key) -> List: 
@@ -147,7 +165,7 @@ def save_bookmarks(bookmark_name: str, data: Dict) -> dbc.Alert:
     return dbc.Alert("Bookmark saved successfully!", color="success", duration=3000)
 
 
-def create_table() ->  html.Div: 
+def create_table(data) ->  html.Div: 
     return dag.AgGrid(
             id="table", 
             columnDefs=[
@@ -155,9 +173,10 @@ def create_table() ->  html.Div:
                 {"headerName": "Batch", "field": "Batch","checkboxSelection": True, "headerCheckboxSelection": True}, 
                 {"headerName": "Name", "field": "Name"}
             ],   
-            rowData=[],
-            columnSize="sizeToFit",
-            defaultColDef={"resizeable": False, "sortable": False},
+            rowData=data,
+            virtualRowData=data, 
+            columnSize="responsiveSizeToFit",
+            defaultColDef={"resizeable": True, "sortable": False},
             dashGridOptions={
                 "rowDragManaged": True,
                 "rowDragMultiRow": True,
@@ -166,7 +185,7 @@ def create_table() ->  html.Div:
             }, style={"fontSize": "16px"})
 
 
-def table(): 
+def table(data): 
     return [dbc.Row(html.P("Choose a method to load the data"), className="lead", loading_state={"prop_name": "holds_table", "component_name": "holds_table"}), 
             
             dbc.Row(
@@ -181,7 +200,8 @@ def table():
                             ),
                             dbc.AccordionItem(
                             [html.P("Use bookmarked data."),
-                             dbc.Button("Click here", id='bookmark_button')],
+                             dbc.Button("Click here", id='bookmark_button')
+                             ],
                             title="Load bookmarks",
                             )],
                             start_collapsed=True),
@@ -197,7 +217,7 @@ def table():
                                             target="delete_button")]),
                                 dbc.Col([dbc.Button("Do you want to bookmark this data?", 
                                         id="bookmark", color="dark", className="float-end")])]), 
-                                create_table(),
+                                create_table(data),
                                 dbc.Modal(
                                     [
                                         dbc.ModalHeader("Enter Bookmark Name"),
@@ -218,7 +238,7 @@ def table():
                             target="bookmark"
                         ),
                         dbc.Row([dbc.Col(children=[], id="bookmark_success", width=8), 
-                                dbc.Col(dbc.Button("Confirm Selection", id="confirm_selection_button",className="float-end")
+                                dbc.Col(dbc.Button("Confirm Selection", id="confirm_selection_button",className="float-end", n_clicks=None)
                                 , width=4)])], 
                         width=5)
                     ], 
@@ -238,7 +258,7 @@ tab_1d_content = html.Div(
     style={"height": "82vh"}
 )
 
-def collapse_wavelength_selection(): 
+def collapse_wavelength_selection(wv_data): 
     return html.Div(
         children=[
             dbc.Button("Change wavelength?", size="sm", id="button_collapse"), 
@@ -247,32 +267,44 @@ def collapse_wavelength_selection():
                 *make_break(1), 
                 dbc.Row(
                     [html.P("Emission (minimum)"), 
-                     dbc.Input(id="emission_min", min=200, max=800, value=200, style={"width": "60%"}, class_name="mx-3")]
+                     dbc.Input(id="emission_min", type="number", min=200, max=800, value=200 if not wv_data else wv_data[0], style={"width": "60%"}, class_name="mx-3")]
                 ), 
                 *make_break(1),
                 dbc.Row(
                     [html.P("Emission (maximum)"), 
-                     dbc.Input(id="emission_max", min=200, max=800, value=800, style={"width": "60%"}, class_name="mx-3")]
+                     dbc.Input(id="emission_max", type="number",min=200, max=800, value=800 if not wv_data else wv_data[1], style={"width": "60%"}, class_name="mx-3")]
                 ), 
                 *make_break(1),
                 dbc.Row(
                     [html.P("Excitation (minimum)"), 
-                     dbc.Input(id="excitation_min", min=200, max=800, value=200, style={"width": "60%"}, class_name="mx-3")]
+                     dbc.Input(id="excitation_min",type="number", min=200, max=800, value=200 if not wv_data else wv_data[2], style={"width": "60%"}, class_name="mx-3")]
                 ), 
                 *make_break(1),
                 dbc.Row(
                     [html.P("Excitation (maximum)"), 
-                     dbc.Input(id="excitation_max", min=200, max=800, value=800, style={"width": "60%"}, class_name="mx-3")]
+                     dbc.Input(id="excitation_max",type="number", min=200, max=800, value=800 if not wv_data else wv_data[3], style={"width": "60%"}, class_name="mx-3")]
                 )], 
                 id="collapse", 
                 is_open=False
-            )
+            ), 
+            *make_break(2), 
+            dbc.Button("Preprocessing?", size="sm", id="preprocessing_button", color="info"), 
+            dbc.Collapse([
+                *make_break(1), 
+                dbc.RadioItems(
+                    options=["Raw", "Preprocessed"], 
+                    value="Preprocessed", 
+                    id="preprocessing_type"
+                )
+            ], 
+            id="collapse_preprocess", 
+                is_open=False)
         ], 
         className="float-end"
     )
 
 
-def spectrum_page() -> List: 
+def spectrum_page(wv_data) -> List: 
     return [
         dbc.Row(
             dbc.Col([dbc.Button("Click here to create the figure", id="create_figure")], 
@@ -286,28 +318,8 @@ def spectrum_page() -> List:
                 ]
                 ,
                 ),style={"height":"90%"}), width=11), 
-                dbc.Col(collapse_wavelength_selection(), width=1, class_name="float-end")])
+                dbc.Col(collapse_wavelength_selection(wv_data), width=1, class_name="float-end")])
     ]
-
-def render_page_1_content() -> List[Any]: 
-    data_file = _PATH/"data_tab.json"
-    data = load_json_file(data_file)
-    if data: 
-        return data
-    return table()
-
-
-def save_page_1_content(data: Any) -> None: 
-    data_file = _PATH/"data_tab.json"
-    # TO DO: Find better ways to do this
-    try: 
-        if data and isinstance(data, list) and \
-        (data[0]['props']['children']['props']['children'] 
-         == "Choose a method to load the data"): 
-            save_json_file(data_file, data)
-
-    except KeyError as err: 
-        print("I am a bug but I am ignored") 
 
     
 def main_content() -> html.Div: 
@@ -315,5 +327,4 @@ def main_content() -> html.Div:
         id="main-content", 
         style=CONTENT_STYLE
         )
-
 

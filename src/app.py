@@ -1,33 +1,60 @@
 import dash
 import dash_bootstrap_components as dbc
 from dash import Input, Output, dcc, html, State
-from components.components import main_content, \
+from src.components.components import main_content, \
     sidebar, dropdown_content, \
-    render_page_1_content, save_page_1_content, \
     upload_content, load_bookmarks, save_bookmarks, \
-    spectrum_page, return_bookmark_data
+    spectrum_page, return_bookmark_data, table
 from dash import callback_context as ctx
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
+from src.dataloader.dataloader import FluorescenceData
+from pathlib import Path
+import textwrap
+import json
+
+
+with open(Path(__file__).parents[1]/'config.json') as config_file:
+    config = json.load(config_file)
+
+DATA_FOLDER_PATH = Path(config['filepath'])
 
 app = dash.Dash(external_stylesheets=[dbc.themes.YETI],
                 suppress_callback_exceptions=True)
+
+fluorescence_obj = None
+fluorescence_obj_scatter_corr = None
+
+if list(DATA_FOLDER_PATH.glob("*.csv")): 
+    fluorescence_obj = FluorescenceData(
+                    filepath=DATA_FOLDER_PATH, 
+                    scatter_correction=False
+                )
+    fluorescence_obj_scatter_corr = FluorescenceData(
+                    filepath=DATA_FOLDER_PATH, 
+                    scatter_correction=True
+                )
 
 app.layout = html.Div(
     [dcc.Location(id="url"), 
      sidebar(), 
      main_content(), 
-     dcc.Store(id="table_data_store", storage_type='local')])
+     dcc.Store(id="table_store", storage_type="session", data=[]), 
+     dcc.Store(id="wavelength_selection", storage_type="session", data=[])])
 
 
 @app.callback(
     Output(component_id="dropdown_sample", component_property="options"), 
-    Input(component_id="dropdown_batch", component_property="value"))
+    Input(component_id="dropdown_batch", component_property="value"), 
+    prevent_initial_call=True)
 def show_samples(val): 
     if val is not None: 
-        return [1,2,3,4,5, "hey"]
+        return list(fluorescence_obj.df.loc[
+            lambda x: x.Batch == val, "Name"
+        ])
     else: 
         raise PreventUpdate
+
 
 
 
@@ -36,7 +63,7 @@ def show_samples(val):
     [Input('dropdown_sample', 'value'),
      Input('dropdown_sample_search', 'value')],
     [State('table', 'rowData'), 
-     State('dropdown_batch', 'value'), 
+     State('dropdown_batch', 'value'),
      ]
 )
 def creating_table(sample_first_route, sample_second_route, data, batch): 
@@ -55,7 +82,7 @@ def creating_table(sample_first_route, sample_second_route, data, batch):
             _sample = sample_first_route
         else: 
             raise PreventUpdate
-
+        
     else: 
         raise PreventUpdate
     
@@ -67,37 +94,47 @@ def creating_table(sample_first_route, sample_second_route, data, batch):
     return data
 
 
+
 @app.callback(
     Output("table", "rowData", allow_duplicate=True),
     [Input('dropdown_bookmark', 'value')],
-    [State('table', 'rowData') 
-    ], 
     prevent_initial_call=True
 )
-def creating_table_from_bookmark(bookmark, data): 
+def creating_table_from_bookmark(bookmark): 
     if (not ctx.triggered) or (bookmark is None): 
         raise PreventUpdate
     
     _data_bookmark = return_bookmark_data(bookmark)
-    # TO DO: Currently it is possible to first select the bookmark \
-    # and then select using batch and samples but not the other way around
     return _data_bookmark
 
 
-# This callback can be modified by using the in-built dcc.Store class.
-# I have used dcc.Store later to save the table data
-@app.callback( Output("main-content", "children"), 
+@app.callback(Output("main-content", "children"), 
               [Input("url", "pathname")], 
-              State("main-content", "children")
+              [State("table_store", "data"), 
+               State("wavelength_selection", "data")]
               )
-def render_page_content(pathname, children):
+def render_page_content(pathname, virtualtabledata, wv_data):
     if pathname == "/page-1":
-        return render_page_1_content()
+        return table(virtualtabledata)
     elif pathname == "/page-2":
-        save_page_1_content(data=children)
-        return spectrum_page()
+        return spectrum_page(wv_data)
     else: 
         raise PreventUpdate
+
+
+@app.callback(
+        Output("table_store", "data"),  
+        Input("confirm_selection_button", "n_clicks"), 
+        State("table", "virtualRowData"), 
+        prevent_initial_call=True
+)
+def store_data(n_clicks, tabledata): 
+    if not n_clicks or not tabledata: 
+        raise PreventUpdate
+    
+    if n_clicks: 
+        return tabledata
+    
 
 
 @app.callback(
@@ -108,8 +145,11 @@ def render_page_content(pathname, children):
          prevent_initial_call=True
 )
 def left_main_content(*unused):
-    if ctx.triggered_id == "data_folder_button": 
-        return dropdown_content()
+    if (fluorescence_obj is None ) & (ctx.triggered_id in ["data_folder_button", "upload_button"]): 
+        return dbc.Alert("There are no csv files in the folder", 
+                        color="warning", className="fs-2 text")
+    if ctx.triggered_id == "data_folder_button":
+        return dropdown_content(fluorescence_obj.df)
     elif ctx.triggered_id == "upload_button": 
         return upload_content()
     elif ctx.triggered_id == "bookmark_button": 
@@ -140,6 +180,24 @@ def toggle_modal(open_click, close_click, save_click, bookmark, is_open, tableDa
         return not is_open, [], 0
     return is_open, [], 0
 
+@app.callback(
+    [Output("modal-bookmark-remove", "is_open"), 
+    Output("remove-bookmark", "n_clicks")],
+    [Input("remove_bookmark_button", "n_clicks"), 
+    Input("donot-remove-modal", "n_clicks"), 
+    Input("remove-bookmark", "n_clicks")],
+    [State("bookmark-name-to-delete", "value"), 
+     State("modal-bookmark-remove", "is_open")], 
+    prevent_initial_call=True
+)
+def toggle_modal(open_click, close_click, remove_click, bookmarks, is_open):
+
+    if remove_click & (bookmarks is not None): 
+        print("I will remove everything")
+    elif open_click or close_click or remove_click: 
+        return not is_open, 0
+    return is_open, 0
+
 
 @app.callback(
     Output("table", "deleteSelectedRows"),
@@ -149,20 +207,6 @@ def toggle_modal(open_click, close_click, save_click, bookmark, is_open, tableDa
 )
 def selected(*unused):
     return True
-
-
-@app.callback(
-        Output("table_data_store", "data"), 
-        Input("confirm_selection_button", "n_clicks"), 
-        State("table", "virtualRowData")
-)
-def store_data(n_clicks, data): 
-    if not data: 
-        raise PreventUpdate
-    
-    if n_clicks: 
-        return data
-    
 
 @app.callback(
         Output("collapse", "is_open"), 
@@ -176,25 +220,71 @@ def toggle_collapse(n, is_open):
 
 
 @app.callback(
+        Output("collapse_preprocess", "is_open"), 
+        [Input("preprocessing_button", "n_clicks")], 
+        [State("collapse_preprocess", "is_open")]
+)
+def toggle_collapse_preprocess(n, is_open): 
+    if n: 
+        return not is_open
+    return is_open
+
+
+
+@app.callback(
     Output("oneD", "children"),
     Output("twoD", "children"),
+    Output("wavelength_selection", "data"),
     [Input('create_figure', 'n_clicks')],
-    [State("table_data_store", "data"), 
+    [State("table_store", "data"), 
     State("emission_min", "value"), 
     State("emission_max", "value"), 
     State("excitation_min", "value"), 
-    State("excitation_max", "value")], 
+    State("excitation_max", "value"),
+    State("wavelength_selection", "data"), 
+    State("preprocessing_type", "value")],
     prevent_initial_call=True
 )
 
-def get(click, data, em_min, em_max, ex_min, ex_max):
+def get(click, data, em_min, em_max, ex_min, ex_max, wv_store, pp_type):
+    def check_presence(df):
+        indices = []
+        for row in data:
+            matched_indices = df.index[(df.Batch == row['Batch']) & (df.Name == row['Name'])]
+            indices.extend(matched_indices)
+        return indices
+
     if not data: 
         raise PreventUpdate
+    
     if click:
-        fig1 = go.Figure()
-        fig2 = go.Figure()
-        return dcc.Graph(figure=fig1, style={"width": "100%", "height": "100%"}), dcc.Graph(figure=fig2, style={"width": "100%", "height": "100%"})
+            index_loc = check_presence(fluorescence_obj.df)
+            # Generate the 1D figure
 
+            if pp_type == "Raw": 
+                obj = fluorescence_obj
+            else: 
+                obj = fluorescence_obj_scatter_corr
+
+
+            fig_1d = obj.get_spectrum(
+                index_loc=index_loc, 
+                select_range=([em_min, em_max], [ex_min, ex_max]))
+
+            fig_2d = obj.get_2d_spectra_plotly_multiple(
+                index_loc=index_loc,
+                select_range=([em_min, em_max], [ex_min, ex_max]))
+            
+            for traces in fig_1d.data: 
+                traces['name'] = '<br>'.join(textwrap.wrap(traces['name'], 25))
+
+            return dcc.Graph(figure=fig_1d, style={"width": "100%", "height": "100%"}),\
+                  dcc.Graph(figure=fig_2d, style={"width": "100%", "height": "100%"}), \
+                  [em_min, em_max, ex_min, ex_max]
+        
+    else: 
+        raise PreventUpdate
+    
 
 if __name__ == "__main__":
     app.run(debug=True, port=4000)

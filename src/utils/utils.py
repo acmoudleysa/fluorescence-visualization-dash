@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import plotly_express as px
 import numpy.typing as npt
+import scipy
 
 def load_json_file(file_path: pathlib.Path) -> Union[Any, Dict]: 
     """Helper function to load the json file
@@ -64,8 +65,9 @@ class RangeCutTransformer2D():
         return X[:, slice(self._ex[0], self._ex[1]), slice(self._em[0], self._em[1])]
 
 
-
-    
+    def fit_transform(self, 
+                      X: np.ndarray) -> np.ndarray: 
+        return self.fit(X).transform(X)
 
 
 
@@ -85,7 +87,7 @@ def spectrum(data: npt.NDArray,
              px.colors.qualitative.Set2 + \
              px.colors.qualitative.Set3
     label_colors = {
-        label:colors[col] for label, col in enumerate(np.unique(labels))
+        label:colors[col] for col, label in enumerate(np.unique(labels))
     }
 
     fig = px.line(
@@ -93,7 +95,8 @@ def spectrum(data: npt.NDArray,
         x='Emission', 
         y='intensity', 
         color='Excitation', 
-        color_discrete_map=label_colors
+        color_discrete_map=label_colors, 
+        line_group="index"
     )
     fig.update_layout(
         {"xaxis": dict(mirror=True, 
@@ -227,15 +230,6 @@ def _scatter_bands():
     ]
     return pd.DataFrame.from_records(data)
  
-
-if __name__ == "__main__": 
-    example_data = np.random.normal(5, 2.5, size=(3, 100))
-    fig = spectrum(example_data, 
-             labels=[0, 1, 1], 
-             wavenumbers=np.arange(example_data.shape[1]), 
-             )
-    
-    fig.show()
 
     
 

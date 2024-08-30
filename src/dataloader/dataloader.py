@@ -4,11 +4,11 @@ import pathlib
 import logging
 import json
 import pandas as pd
-import tqdm
+from tqdm import tqdm
 from datetime import datetime
 import numpy as np
 import numpy.typing as npt
-from utils.utils import scatter_removal, spectrum, RangeCutTransformer2D
+from src.utils.utils import scatter_removal, spectrum, RangeCutTransformer2D
 import math
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
@@ -21,7 +21,7 @@ class FluorescenceData:
     def __init__(self, 
                  filepath: Union[str, os.PathLike], 
                  scatter_correction = False, 
-                 cache_filename: str = "cache.pickle",
+                 cache_filename: str = "rawdata_cache.pickle",
                  rename_filename: str = "rename.json",
                  purge_cache: bool = False,                 
                  ) -> None:
@@ -95,7 +95,7 @@ class FluorescenceData:
                 dataframe_temp = pd.read_csv(file)    # TO DO: Consider using polars for efficiency 
                 unique_samples = set([col.split("_EX_")[0] for col in dataframe_temp.columns if "_EX_" in col])  # sadly this doesnt presever the order
                 temp_dict = self._rename_dict[file.name] if file.name in self._rename_dict else {}
-                date = datetime.fromtimestamp(os.path.getctime(file))
+                date = datetime.fromtimestamp(os.path.getmtime(file))
                 for sample in unique_samples: 
                     metadata = {}
                     metadata['Date'] = date
@@ -181,9 +181,8 @@ class FluorescenceData:
 
         fig = spectrum(
             np.vstack(data_stacked), 
-            labels=df.Name.to_numpy().repeat(len(ex_em_dict['Excitation'])), 
-            wavenumbers=ex_em_dict['Emission'], 
-            hoverinfo=np.tile(ex_em_dict['Excitation'], df.shape[0])
+            labels=(df.Name + " " + df.Batch).to_numpy().repeat(len(ex_em_dict['Excitation'])), 
+            wavenumbers=ex_em_dict['Emission']
         )
 
 
@@ -293,3 +292,4 @@ class FluorescenceData:
             return pd.concat([df.reset_index(drop=True), 
                             pd.DataFrame(data=self.to_numpy_array(one_dim=True), 
                                         columns=columns)], axis=1)
+        

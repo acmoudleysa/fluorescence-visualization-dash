@@ -15,6 +15,7 @@ dash-ag-grid = "^31.2.0"
 tqdm = "^4.66.5"
 plotly-express = "^0.4.1"
 dash-daq = "^0.5.0"
+scipy = "^1.14.1"
 
 
 [build-system]
