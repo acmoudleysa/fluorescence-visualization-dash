@@ -28,5 +28,5 @@ build-backend = "poetry.core.masonry.api"
 
 
 [tool.poetry.scripts]
-visualizer = "fluorescence_visualization_dash.cli:data_path"
+set_data_path = "fluorescence_visualization_dash.cli:data_path"
 run_fluorescence_app = "fluorescence_visualization_dash.app:main"

@@ -7,14 +7,13 @@ from fluorescence_visualization_dash.components.components import main_content, 
     spectrum_page, return_bookmark_data, table, remove_bookmarks_json
 from dash import no_update, callback_context as ctx
 from dash.exceptions import PreventUpdate
-import plotly.graph_objects as go
 from fluorescence_visualization_dash.dataloader.dataloader import FluorescenceData
-from pathlib import Path
 import textwrap
 import os
+from fluorescence_visualization_dash.utils.utils import load_json_file
 
 
-DATA_FOLDER_PATH = os.getenv("DATA_PATH")
+DATA_FOLDER_PATH = load_json_file("config.json").get("data_path", None)
 
 app = dash.Dash(external_stylesheets=[dbc.themes.YETI],
                 suppress_callback_exceptions=True)

@@ -7,11 +7,12 @@ import pandas as pd
 import plotly_express as px
 import numpy.typing as npt
 import scipy
+from pathlib import Path
 
-def load_json_file(file_path: pathlib.Path) -> Union[Any, Dict]: 
+def load_json_file(file_path: Union[pathlib.Path, str]) -> Union[Any, Dict]: 
     """Helper function to load the json file
     """
-    if file_path.exists(): 
+    if Path(file_path).exists(): 
         with open(file_path, "r") as f: 
             return json.load(f)
     return {}
