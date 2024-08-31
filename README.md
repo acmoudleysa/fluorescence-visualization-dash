@@ -16,4 +16,6 @@ Quick setup guide for windows in terminal:
 2) Could use docker
 3) Different wavelength selection for 1D and 2D spectrum. 
 4) Cannot be deployed on a server because right now the data objects are global variables. Need to figure this out.
+5) Optimize the `scatter_removal` function using `numpy` vectorization.
+6) The webpage seems to have problem with different screen sizes. Fix it 
 
