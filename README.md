@@ -3,10 +3,11 @@ Supposed to work with `*.csv` files generated from Cary Eclipse Fluorescence Spe
 Quick setup guide for windows in terminal: 
 1) `pip install poetry`
 2) `git clone git@github.com:acmoudleysa/fluorescence-visualization-dash.git`
-3) `poetry install`
-4) `poetry shell`
-5) Locate the folder where the `*.csv` files are present using `set_data_path \path`, where `\path` is the actual path of the folder
-6) Run `run_fluorescence_app`
+3) `cd fluorescence-visualization-dash`
+4) `poetry install`
+5) `poetry shell`
+6) Locate the folder where the `*.csv` files are present using `set_data_path \path`, where `\path` is the actual path of the folder
+7) Run `run_fluorescence_app`
 
 
 
