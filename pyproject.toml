@@ -4,6 +4,9 @@ version = "0.1.0"
 description = ""
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
+packages = [
+    { include = "fluorescence_visualization_dash" } 
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -16,8 +19,14 @@ tqdm = "^4.66.5"
 plotly-express = "^0.4.1"
 dash-daq = "^0.5.0"
 scipy = "^1.14.1"
+click = "^8.1.7"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.scripts]
+visualizer = "fluorescence_visualization_dash.cli:data_path"
+run_fluorescence_app = "fluorescence_visualization_dash.app:main"

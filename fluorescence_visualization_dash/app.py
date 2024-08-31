@@ -1,23 +1,20 @@
 import dash
 import dash_bootstrap_components as dbc
 from dash import Input, Output, dcc, html, State
-from src.components.components import main_content, \
+from fluorescence_visualization_dash.components.components import main_content, \
     sidebar, dropdown_content, \
     upload_content, load_bookmarks, save_bookmarks, \
     spectrum_page, return_bookmark_data, table, remove_bookmarks_json
 from dash import no_update, callback_context as ctx
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
-from src.dataloader.dataloader import FluorescenceData
+from fluorescence_visualization_dash.dataloader.dataloader import FluorescenceData
 from pathlib import Path
 import textwrap
-import json
+import os
 
 
-with open(Path(__file__).parents[1]/'config.json') as config_file:
-    config = json.load(config_file)
-
-DATA_FOLDER_PATH = Path(config['filepath'])
+DATA_FOLDER_PATH = os.getenv("DATA_PATH")
 
 app = dash.Dash(external_stylesheets=[dbc.themes.YETI],
                 suppress_callback_exceptions=True)
@@ -25,15 +22,16 @@ app = dash.Dash(external_stylesheets=[dbc.themes.YETI],
 fluorescence_obj = None
 fluorescence_obj_scatter_corr = None
 
-if list(DATA_FOLDER_PATH.glob("*.csv")): 
-    fluorescence_obj = FluorescenceData(
-                    filepath=DATA_FOLDER_PATH, 
-                    scatter_correction=False
-                )
-    fluorescence_obj_scatter_corr = FluorescenceData(
-                    filepath=DATA_FOLDER_PATH, 
-                    scatter_correction=True
-                )
+if DATA_FOLDER_PATH:
+    if os.path.exists(DATA_FOLDER_PATH): 
+        fluorescence_obj = FluorescenceData(
+                        filepath=DATA_FOLDER_PATH, 
+                        scatter_correction=False
+                    )
+        fluorescence_obj_scatter_corr = FluorescenceData(
+                        filepath=DATA_FOLDER_PATH, 
+                        scatter_correction=True
+                    )
 
 app.layout = html.Div(
     [dcc.Location(id="url"), 
@@ -288,6 +286,8 @@ def get(click, data, em_min, em_max, ex_min, ex_max, wv_store, pp_type):
         raise PreventUpdate
     
 
-if __name__ == "__main__":
+def main(): 
     app.run(debug=True, port=4000)
 
+if __name__ == "__main__":
+    main()

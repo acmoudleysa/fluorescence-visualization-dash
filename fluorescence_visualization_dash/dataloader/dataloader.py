@@ -8,7 +8,7 @@ from tqdm import tqdm
 from datetime import datetime
 import numpy as np
 import numpy.typing as npt
-from src.utils.utils import scatter_removal, spectrum, RangeCutTransformer2D
+from fluorescence_visualization_dash.utils.utils import scatter_removal, spectrum, RangeCutTransformer2D
 import math
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go

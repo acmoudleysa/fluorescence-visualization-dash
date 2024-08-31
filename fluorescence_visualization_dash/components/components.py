@@ -3,7 +3,7 @@ from dash import dcc, html
 from typing import List, Any, Union, Dict
 import dash_ag_grid as dag
 from pathlib import Path
-from src.utils.utils import load_json_file, save_json_file
+from fluorescence_visualization_dash.utils.utils import load_json_file, save_json_file
 
 BOOKMARK_PATH = Path(__file__).parents[1]/"cache/bookmarks.json"
 
