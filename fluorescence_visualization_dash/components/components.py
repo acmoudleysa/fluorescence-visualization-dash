@@ -118,9 +118,7 @@ def upload_content() -> dcc.Upload:
                             'textAlign': 'center',
                             'margin': '10px'
                         },
-                        multiple=True
-                    ) 
-
+                        multiple=True)
 
 
 def remove_bookmarks_div(data): 

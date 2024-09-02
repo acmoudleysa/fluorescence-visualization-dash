@@ -20,6 +20,7 @@ def load_json_file(file_path: Union[pathlib.Path, str]) -> Union[Any, Dict]:
 
 def save_json_file(file_path: pathlib.Path, data: Any) -> None: 
     """ Helper method to save as a json file"""
+    file_path.parent.mkdir(parents=True, exist_ok=True)
     with open(file_path, "w") as f: 
         json.dump(data, f)
 
@@ -35,8 +36,7 @@ class RangeCutTransformer2D():
     """
     def __init__(self,
                 columns_range_modes:tuple=([300, 400], [400, 500]),
-                exic_emis: ExcitationEmissionRange=None,
-                return_2d: bool=False) -> None:
+                exic_emis: ExcitationEmissionRange=None) -> None:
         
         self.columns_range_modes = columns_range_modes
         self.exic_emis = exic_emis

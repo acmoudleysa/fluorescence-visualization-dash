@@ -7,4 +7,3 @@ poetry.lock
 *.csv
 
 test_data/
-config.json
