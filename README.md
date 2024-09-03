@@ -18,4 +18,4 @@ Quick setup guide for windows in terminal:
 4) Cannot be deployed on a server because right now the data objects are global variables. Need to figure this out.
 5) Optimize the `scatter_removal` function using `numpy` vectorization.
 6) The webpage seems to have problem with different screen sizes. Fix it 
-
+7) Follow [this](https://dash.plotly.com/urls) file structure
