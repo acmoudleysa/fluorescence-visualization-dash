@@ -136,6 +136,7 @@ def store_data(n_clicks, tabledata):
 
 @app.callback(
         Output(component_id="left_main_content", component_property="children"), 
+        Output("bookmark_button", "n_clicks", allow_duplicate=True), 
         [Input(component_id="data_folder_button", component_property="n_clicks"), 
          Input(component_id="upload_button", component_property="n_clicks"), 
          Input(component_id="bookmark_button", component_property="n_clicks")], 
@@ -144,13 +145,13 @@ def store_data(n_clicks, tabledata):
 def left_main_content(*unused):
     if (fluorescence_obj is None ) & (ctx.triggered_id in ["data_folder_button", "upload_button"]): 
         return dbc.Alert("There are no csv files in the folder", 
-                        color="warning", className="fs-2 text")
+                        color="warning", className="fs-2 text"), no_update
     if ctx.triggered_id == "data_folder_button":
-        return dropdown_content(fluorescence_obj.df)
+        return dropdown_content(fluorescence_obj.df), no_update
     elif ctx.triggered_id == "upload_button": 
-        return upload_content()
+        return upload_content(), no_update
     elif ctx.triggered_id == "bookmark_button": 
-        return load_bookmarks()
+        return load_bookmarks(), 1
     else: 
         raise PreventUpdate
 
@@ -159,23 +160,25 @@ def left_main_content(*unused):
 @app.callback(
     [Output("modal", "is_open"), 
     Output("bookmark_success", "children"), 
-    Output("save-bookmark", "n_clicks")],
+    Output("save-bookmark", "n_clicks"), 
+    Output("bookmark_button", "n_clicks", allow_duplicate=True)],
     [Input("bookmark", "n_clicks"), 
     Input("close-modal", "n_clicks"), 
     Input("save-bookmark", "n_clicks")],
     [State("bookmark-name", "value"), 
+     State("bookmark_button", "n_clicks"),
      State("modal", "is_open"), 
      State("table", "virtualRowData")], 
     prevent_initial_call=True
 )
-def toggle_modal(open_click, close_click, save_click, bookmark, is_open, tableData):
+def toggle_modal(open_click, close_click, save_click, bookmark, val_bookmark_button,  is_open, tableData):
     if not tableData: 
         raise PreventUpdate
     if save_click & (bookmark is not None): 
-        return not is_open, save_bookmarks(bookmark, tableData), 0
+        return not is_open, save_bookmarks(bookmark, tableData), 0, 1 if val_bookmark_button else no_update 
     elif open_click or close_click or save_click: 
-        return not is_open, [], 0
-    return is_open, [], 0
+        return not is_open, [], 0, no_update
+    return is_open, [], 0, no_update
 
 @app.callback(
     [Output("modal-bookmark-remove", "is_open"), 
@@ -183,7 +186,8 @@ def toggle_modal(open_click, close_click, save_click, bookmark, is_open, tableDa
     Output(component_id="bookmark_button", component_property="n_clicks")],
     [Input("remove_bookmark_button", "n_clicks"), 
     Input("donot-remove-modal", "n_clicks"), 
-    Input("remove-bookmark", "n_clicks")],
+    Input("remove-bookmark", "n_clicks")
+    ],
     [State("bookmark-name-to-delete", "value"), 
      State("modal-bookmark-remove", "is_open"), 
      State(component_id="bookmark_button", component_property="n_clicks")], 
@@ -192,7 +196,7 @@ def toggle_modal(open_click, close_click, save_click, bookmark, is_open, tableDa
 def toggle_modal(open_click, close_click, remove_click, bookmarks, is_open, clicks):
     if bookmarks is not None: 
         remove_bookmarks_json(bookmarks)
-        return not is_open, 0, clicks + 1
+        return not is_open, 0, clicks   # clicks + 1 is not necessary, it turns out even on the same n_clicks it is triggered
     elif open_click or close_click or remove_click: 
         return not is_open, 0, no_update
     return is_open, 0, no_update
@@ -240,12 +244,11 @@ def toggle_collapse_preprocess(n, is_open):
     State("emission_max", "value"), 
     State("excitation_min", "value"), 
     State("excitation_max", "value"),
-    State("wavelength_selection", "data"), 
     State("preprocessing_type", "value")],
     prevent_initial_call=True
 )
 
-def get(click, data, em_min, em_max, ex_min, ex_max, wv_store, pp_type):
+def get(click, data, em_min, em_max, ex_min, ex_max, pp_type):
     def check_presence(df):
         indices = []
         for row in data:

@@ -169,8 +169,7 @@ class FluorescenceData:
             del ex_em_dict['Date']
             
             rg_transform = RangeCutTransformer2D(select_range, 
-                                                 ex_em_dict,
-                                                 True)
+                                                 ex_em_dict)
             data_stacked = rg_transform.fit_transform(data_stacked)
             ex_em_dict['Emission'] = rg_transform.final_state['Emission']
             ex_em_dict['Excitation'] = rg_transform.final_state['Excitation']
@@ -181,14 +180,17 @@ class FluorescenceData:
 
         fig = spectrum(
             np.vstack(data_stacked), 
-            labels=(df.Name + " " + df.Batch).to_numpy().repeat(len(ex_em_dict['Excitation'])), 
+            labels=(df.Name).to_numpy().repeat(len(ex_em_dict['Excitation'])),
             wavenumbers=ex_em_dict['Emission']
         )
 
 
         fig.update_xaxes(nticks=10, title='Emission')
         fig.update_layout(legend_title_text="Samples",
-                          title='', 
+                          title='', font=dict(
+        size=15,
+        color="RebeccaPurple"
+    )
         )
         fig.update_yaxes(title='Intensity')
         return fig
@@ -218,8 +220,7 @@ class FluorescenceData:
             del ex_em_dict['Date']
             
             rg_transform = RangeCutTransformer2D(select_range, 
-                                                ex_em_dict,
-                                                True)
+                                                ex_em_dict)
             data_stacked = rg_transform.fit_transform(data_stacked)
             ex_em_dict['Emission'] = rg_transform.final_state['Emission']
             ex_em_dict['Excitation'] = rg_transform.final_state['Excitation']
@@ -232,7 +233,7 @@ class FluorescenceData:
         fig = make_subplots(rows=rows, cols=3, subplot_titles=df.Name.tolist(), 
                             horizontal_spacing=0.17)
         coloraxis = dict()
-        colorscale= "Cividis"
+        colorscale= "Jet"
         for i in range(n_samples):
             z_data = data_stacked[i]
             row, col = (i // 3) + 1, (i % 3) + 1 

@@ -186,6 +186,7 @@ def create_table(data) ->  html.Div:
             dashGridOptions={
                 "rowDragManaged": True,
                 "rowDragMultiRow": True,
+                'animateRows': True, 
                 "rowSelection": "multiple",
                 "rowDragEntireRow": True,
             }, style={"fontSize": "16px"})
@@ -206,7 +207,7 @@ def table(data):
                             ),
                             dbc.AccordionItem(
                             [html.P("Use bookmarked data."),
-                             dbc.Button("Click here", id='bookmark_button')
+                             dbc.Button("Click here", id='bookmark_button', n_clicks=0)
                              ],
                             title="Load bookmarks",
                             )],
