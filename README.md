@@ -18,5 +18,5 @@ The idea was to test the dashboard. Currently, I am focusing on minimizing the u
 3) Different wavelength selection for 1D and 2D spectrum. 
 4) Cannot be deployed on a server because right now the data objects are global variables. Need to figure this out.
 5) Optimize the `scatter_removal` function using `numpy` vectorization.
-6) The webpage seems to have problem with different screen sizes. Fix it 
+6) The webpage seems to have problem with different screen sizes. Make it responsive (Using `flexbox`)
 7) Follow [this](https://dash.plotly.com/urls) file structure
